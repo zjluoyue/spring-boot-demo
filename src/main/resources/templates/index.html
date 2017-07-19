@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"/>
+    <title>listing_tools</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet"/>
+    <link href="/css/styles.css" rel="stylesheet" type="text/css" />
+    <script language="javascript" type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+    <script type="text/javascript">
+        jQuery.noConflict();
+    </script>
+    <script language="javascript" type="text/javascript" src="/js/jquery.simplemodal.1.4.1.min.js"></script>
+    <script language="javascript" type="text/javascript" src="/js/jquery.scrollTo-min.js"></script>
+</head>
+<body >
+    <div id="big-container">
+        <div id="container">
+            <div id="top">RETS DATA</div>
+            <div class='box'>
+                <div class='box_heading dark-bg'>Login</div>
+                <div class='box_content light-bg'>
+                    <form method='post' action='#' th:action="@{/login}" th:object="${user}">
+                        <input type='hidden' name='action' value='login'/>
+                        <table border='0' cellpadding='1' cellspacing='1' width='100%'>
+                            <tr>
+                                <td width='25%'>
+                                <b><label for='l-login_url'>Login URL:</label></b>
+                                </td>
+                                <td width='75%'>
+                                    <input type='text' id='l-login_url' th:field='*{loginUrl}' size='65' value=''/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b><label for='l-username'>Username:</label></b></td>
+                                <td><input type='text' id='l-username' th:field='*{username}' size='15' value=''/></td>
+                            </tr>
+                            <tr>
+                                <td><b><label for='l-password'>Password:</label></b></td>
+                                <td><input type='password' id='l-password' th:field='*{password}' size='15' value=''/></td>
+                            </tr>
+                            <tr class='extra-link-row'>
+                                <td></td>
+                                <td><a href='' id='extra-link' >Show More Options</a></td>
+                            </tr>
+                            <tr class='extra'>
+                                <td><b><label for='l-user_agent'>User-Agent:</label></b></td>
+                                <td><input type='text' id='l-user_agent' th:field='*{userAgent}' size='20' value='RETSDATA/1.0'/></td>
+                            </tr>
+                            <tr class='extra'>
+                                <td><b><label for='l-ua_pwd'>User-Agent Password:</label></b></td>
+                                <td><input type='password' id='l-ua_pwd' th:field='*{userAgentPWD}' size='15' value=''/> <small>(Leave blank if you don't have one)</small></td>
+                            </tr>
+                            <tr class='extra'>
+                                <td><b><label for='l-rets_version'>RETS Version:</label></b></td>
+                                <td><select id='l-rets_version' th:field='*{retsVersion}'>
+                                    <option value='1.0'>1.0</option>
+                                    <option value='1.5'>1.5</option>
+                                    <option value='1.7'>1.7</option>
+                                    <option value='1.7.2'>1.7.2</option>
+                                </select></td>
+                            </tr>
+                            <tr class='extra'>
+                                <td><b>Force Basic Auth.:</b></td>
+                                <td><label for='force_basic_y'><input type='radio' name='force_basic' value='true' id='force_basic_y'/> Yes &nbsp;</label> &nbsp; <label for='force_basic_n'><input type='radio' name='force_basic' value='false' checked='checked' id='force_basic_n'/> No</label></td></tr>
+                            <tr>
+                                <td></td>
+                                <td><input type='submit' value='Login' id='login-button' /></td>
+                            </tr>
+                        </table>
+                    </form>
+                </div>
+            </div>
+            <!--<a href='http://github.com/troydavisson/RETS-MD'><img style='position: absolute; top: 0; right: 0; border: 0;' src='https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png' alt='Fork me on GitHub'/></a>-->
+        </div>
+    </div>
+</body>
+<script type="application/javascript">
+    jQuery("#extra-link").live("click", function () {
+        jQuery(".extra").each(function() {
+            jQuery(this).show('slow');
+        });
+        jQuery(".extra-link-row").each(function() {
+            jQuery(this).hide();
+        });
+        return false;
+    });
+</script>
+</html>

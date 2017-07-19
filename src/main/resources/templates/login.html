@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"/>
+    <title>listing_tools</title>
+    <!-- jQuery JavaScript plugins-->
+    <script type='text/javascript' src="webjars/jquery/2.1.4/jquery.min.js"></script>
+    <script type='text/javascript' src="https://cdn.bootcss.com/jquery/3.2.1/jquery.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet"/>
+    <link href="/css/styles.css" rel="stylesheet" type="text/css" />
+    <style>
+        pre {
+            outline: 1px solid #ccc;
+            padding: 5px;
+            margin: 5px;
+            height: 600px;
+            overflow: auto;
+        }
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+
+        .exportfile{
+            /*position: fixed;*/
+            /*width: 100%;*/
+            /*top: 0px;*/
+            padding: 10px;
+            line-height: 15px;
+            line-height: 15px;
+            /*background: white;*/
+            z-index: 1000;
+            text-align: center;
+        }
+        .empty{
+            color: red;
+        }
+    </style>
+    <!--<script type="application/javascript">-->
+        <!--/**-->
+         <!--* 动态时间-->
+         <!--* @type {null}-->
+         <!--*/-->
+        <!--var timerRunning = false;-->
+        <!--var timerID = null;-->
+        <!--function showtime () {-->
+            <!--var now = new Date();-->
+            <!--var hours = now.getHours();-->
+            <!--var minutes = now.getMinutes();-->
+            <!--var seconds = now.getSeconds()-->
+            <!--var timeValue = "" +((hours >= 12) ? "下午 " : "上午 " )-->
+            <!--timeValue += ((hours >12) ? hours -12 :hours)-->
+            <!--timeValue += ((minutes < 10) ? ":0" : ":") + minutes-->
+            <!--timeValue += ((seconds < 10) ? ":0" : ":") + seconds-->
+            <!--document.getElementById("clock").value = timeValue;-->
+            <!--timerID = setTimeout("showtime()",1000);-->
+            <!--timerRunning = true;-->
+        <!--}-->
+
+        <!--function stopclock (){-->
+            <!--if(timerRunning)-->
+                <!--clearTimeout(t);-->
+            <!--timerRunning = false;-->
+        <!--}-->
+        <!--function startclock () {-->
+            <!--stopclock();-->
+            <!--showtime();-->
+        <!--}-->
+    <!--</script>-->
+</head>
+<body >
+    <div id="big-container">
+        <div id="container">
+            <div id="top">查询</div>
+            <div class='box'>
+                <div class='box_heading dark-bg'>
+                    <a href="/logout">LogOut</a>
+
+                    <span>
+                        <input id="clock" th:value="*{dataMessage}" style="margin-left: 1000px;font-size: 9pt;color:#000000;border:0" size="14"/>
+                    </span>
+                </div>
+
+                <div class='box_content light-bg'>
+                    <form id="query_form" th:action="@{/search}" >
+
+                        <div class="exportfile">
+                            <b><label for='l-resource'>resource:</label></b>
+                            <select id='l-resource' style="width:150px" value=''>
+                            </select>
+                            <b><label for='l-sclass'>sclass:</label></b>
+                            <select id='l-sclass' style="width:150px" value=''>
+                                <option>请选择Class</option>
+                            </select>
+                            <span>
+                                <button id="submit" type="button">查询</button>
+                                <button id="history" type="button">历史记录</button>
+                                <!--<button id="check" type="button">检查</button>-->
+                                <button id="clean" type="button" onclick="$('#result').empty();">清除</button>
+                            </span>
+
+                        </div>
+                        <!--<table border='0' cellpadding='1' cellspacing='1' width='100%'>-->
+                            <!--&lt;!&ndash;<tr style="position:fixed;top:10px;">&ndash;&gt;-->
+                                <!--&lt;!&ndash;<td></td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<td style="text-align: center">&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<button id="submit" type="button">查询</button>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<button id="history" type="button">记录</button>&ndash;&gt;-->
+                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<tr style="position:fixed;top:20px;">&ndash;&gt;-->
+                                <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<td style="text-align: center">&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<b><label for='l-resource'>resource:</label></b>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<select id='l-resource' style="width:150px" value=''>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;</select>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<b><label for='l-sclass'>sclass:</label></b>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<select id='l-sclass' style="width:150px" value=''>&ndash;&gt;-->
+                                        <!--&lt;!&ndash;<option>请选择Class</option>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;</select>&ndash;&gt;-->
+                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                            <!--<tr>-->
+                                <!--<td>-->
+                                <!--</td>-->
+                                <!--<td width='100%' style="text-align: center">-->
+                                <!--</td>-->
+
+                            <!--</tr>-->
+                        <!--</table>-->
+                        <div style="text-align: center">
+                            <b><label for='l-query'>query:</label></b>
+                            <input type='text' id='l-query' size='150' value=''/>
+                        </div>
+                        <pre id="result" >
+
+                        </pre>
+                        <table id="l-table"  border='0' cellpadding='1' cellspacing='1' width='100%'>
+                            <tr>
+                                <td>SystemName</td><td>StandardName</td><td>Description</td><td>Type</td><td>Length</td>
+                            </tr>
+                        </table>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--返回结果-->
+</body>
+<script type="application/javascript">
+/**
+ * 登录后即可加载resource列表,方便选择
+ */
+var $resource = $("#l-resource");
+var $sclass = $("#l-sclass");
+
+$.ajax({
+    type:'GET',
+    dateType : "json",
+    url:'http://localhost:8062/resources',
+    success: function (result) {
+//        $("#result").append(syntaxHighlight(result));
+        build_dropdown(result, $resource, "请选择Resource", "path");
+    },
+    error:function (XMLHttpRequest, textStatus, errorThrown) {
+        $("#result").append(
+            "<span>执行失败，状态码：" + XMLHttpRequest.status + "</span>")
+    }
+});
+/**
+ * 改变resource选择后加载加载sclass列表,方便选择
+ */
+$resource.change(function () {
+    $.ajax({
+        url: 'http://localhost:8062/class?index='+$("#l-resource option:selected").val(),
+        type: "GET",
+        dateType : "json",
+        success : function(data) {
+//            $("#result").append(syntaxHighlight(data));
+            $sclass.empty();
+            $sclass.append('<option value="-1">请选择class</option>')
+            if (data) {
+                $.each(data, function(key, value) {
+                    $sclass.append('<option value="' + key + '">'
+                        + value["path"].split(":")[1] + '</option>');
+                });
+            }
+        }
+    });
+});
+$sclass.change(function () {
+    $.ajax({
+        url: 'http://localhost:8062/table?index='+$("#l-sclass option:selected").val(),
+        type: "GET",
+        dateType : "json",
+        success : function(data) {
+            $("#result").empty();
+//            $("#result").append(syntaxHighlight(data));
+            $q_table = $("#l-table");
+            $q_table.empty();
+            $q_table.append('<tr><td>SystemName</td><td>StandardName</td>' +
+                '<td>Description</td><td>Type</td><td>Length</td></tr>');
+            if (data) {
+                $.each(data,function (key, value) {
+                    $q_table.append('<tr><td>' + value["systemName"] +'</td>'
+                        + '<td>' + value["standardName"] + '</td>'
+                        + '<td>' + value["longName"] + '</td>'
+                        + '<td>' + value["dataType"] + '</td>'
+                        + '<td>' + value["maximumLength"] + '</td></tr>');
+                });
+            }
+        }
+    });
+});
+
+$("#check").click(function () {
+    alert(build_query());
+});
+function build_query() {
+    var s = "";
+    $(".query_text").each(function (key, e) {
+        if (e.value) {
+            s = "(" + $(this).parent().prev('td').prev('td').prev('td').text()
+                + "=" +e.value + ")";
+            s += ",";
+        }
+    });
+    return s.substring(0, s.length - 1);
+}
+
+var build_dropdown = function(data, element, defaultText, keyValue) {
+    element.empty();
+    element.append('<option value="-1">' + defaultText + '</option>')
+    if (data) {
+        $.each(data, function(key, value) {
+            element.append('<option value="' + key + '">'
+                + value[keyValue] + '</option>');
+        });
+    }
+}
+
+
+/**
+ * 查询提交和历史查询
+ */
+$("#submit").click(function () {
+    $.ajax({
+        type:'POST',
+        contentType: "application/json",
+        url:'http://localhost:8062/search',
+        async: false,
+        data: JSON.stringify({
+            query:$("#l-query").val(),
+            resource:$("#l-resource option:selected").text(),
+            sclass:$("#l-sclass option:selected").text()
+        }),
+        dateType:"json",
+        success: function (result) {
+            $("#result").empty();
+            if (result.length > 0) {
+                $("#result").append('<p style="color: green">共有'+ result.length +'条记录</p>');
+                $("#result").append(syntaxHighlight(result));
+            } else {
+                $("#result").append("<span class='empty'>上述查询条件配备不到任何结果</span>")
+            }
+//            $.each(result, function (key, data) {
+//                $("#result").append("<br/>============================<br/>")
+//            });
+        },
+        error:function (XMLHttpRequest, textStatus, errorThrown) {
+            $("#result").append("<span>执行失败，状态码：" + XMLHttpRequest.status + "</span>")
+        }
+    });
+});
+$("#history").click(function () {
+    $.ajax({
+        type:'GET',
+        dateType : "text",
+        url:'http://localhost:8062/history',
+        async: false,
+        success: function (result) {
+            $("#result").empty()
+                .append("<span>" + result + "</span>");
+        },
+        error:function (XMLHttpRequest, textStatus, errorThrown) {
+            $("#result").append("<span>执行失败，状态码：" + XMLHttpRequest.status + "</span>")
+        }
+    });
+});
+
+/**
+ * json高亮显示
+ * @param json
+ * @returns {XML|string|void}
+ */
+function syntaxHighlight(json) {
+    if (typeof json != 'string') {
+        json = JSON.stringify(json, undefined, 2);
+    }
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'key';
+            } else {
+                cls = 'string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'boolean';
+        } else if (/null/.test(match)) {
+            cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
+</script>
+
+</html>
