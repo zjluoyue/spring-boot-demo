@@ -6,27 +6,28 @@ package com.homethy.mls.listing.tools.model;
  */
 public class User {
 
-    private String loginUrl;
+    private String id;
+    private String login_url;
     private String username;
     private String password;
-    private String userAgent;
-    private String userAgentPWD;
-    private String retsVersion;
+    private String user_agent;
+    private String ua_pwd;
+    private String rets_version;
 
-    public String getUserAgent() {
-        return userAgent;
+    public String getId() {
+        return id;
     }
 
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String getUserAgentPWD() {
-        return userAgentPWD;
+    public String getLogin_url() {
+        return login_url;
     }
 
-    public void setUserAgentPWD(String userAgentPWD) {
-        this.userAgentPWD = userAgentPWD;
+    public void setLogin_url(String login_url) {
+        this.login_url = login_url;
     }
 
     public String getUsername() {
@@ -45,31 +46,40 @@ public class User {
         this.password = password;
     }
 
-    public String getLoginUrl() {
-        return loginUrl;
+    public String getUser_agent() {
+        return user_agent;
     }
 
-    public void setLoginUrl(String loginUrl) {
-        this.loginUrl = loginUrl;
+    public void setUser_agent(String user_agent) {
+        this.user_agent = user_agent;
     }
 
-    public String getRetsVersion() {
-        return retsVersion;
+    public String getUa_pwd() {
+        return ua_pwd;
     }
 
-    public void setRetsVersion(String retsVersion) {
-        this.retsVersion = retsVersion;
+    public void setUa_pwd(String ua_pwd) {
+        this.ua_pwd = ua_pwd;
+    }
+
+    public String getRets_version() {
+        return rets_version;
+    }
+
+    public void setRets_version(String rets_version) {
+        this.rets_version = rets_version;
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "loginUrl='" + loginUrl + '\'' +
+                "id='" + id + '\'' +
+                ", login_url='" + login_url + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", userAgent='" + userAgent + '\'' +
-                ", userAgentPWD='" + userAgentPWD + '\'' +
-                ", retsVersion='" + retsVersion + '\'' +
+                ", user_agent='" + user_agent + '\'' +
+                ", ua_pwd='" + ua_pwd + '\'' +
+                ", rets_version='" + rets_version + '\'' +
                 '}';
     }
 }

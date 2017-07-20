@@ -20,23 +20,23 @@
                 <div class='box_heading dark-bg'>Login</div>
                 <div class='box_content light-bg'>
                     <form method='post' action='#' th:action="@{/login}" th:object="${user}">
-                        <input type='hidden' name='action' value='login'/>
+                        <input type='hidden' th:field="*{id}" th:value='*{id}'/>
                         <table border='0' cellpadding='1' cellspacing='1' width='100%'>
                             <tr>
                                 <td width='25%'>
                                 <b><label for='l-login_url'>Login URL:</label></b>
                                 </td>
                                 <td width='75%'>
-                                    <input type='text' id='l-login_url' th:field='*{loginUrl}' size='65' value=''/>
+                                    <input type='text' id='l-login_url' th:field='*{login_url}' size='65' th:value='*{login_url}'/>
                                 </td>
                             </tr>
                             <tr>
                                 <td><b><label for='l-username'>Username:</label></b></td>
-                                <td><input type='text' id='l-username' th:field='*{username}' size='15' value=''/></td>
+                                <td><input type='text' id='l-username' th:field='*{username}' size='15' th:value='*{username}'/></td>
                             </tr>
                             <tr>
                                 <td><b><label for='l-password'>Password:</label></b></td>
-                                <td><input type='password' id='l-password' th:field='*{password}' size='15' value=''/></td>
+                                <td><input type='text' id='l-password' th:field='*{password}' size='15' th:value='*{password}'/></td>
                             </tr>
                             <tr class='extra-link-row'>
                                 <td></td>
@@ -44,20 +44,23 @@
                             </tr>
                             <tr class='extra'>
                                 <td><b><label for='l-user_agent'>User-Agent:</label></b></td>
-                                <td><input type='text' id='l-user_agent' th:field='*{userAgent}' size='20' value='RETSDATA/1.0'/></td>
+                                <td><input type='text' id='l-user_agent' th:field='*{user_agent}' size='20' th:value='*{user_agent}'/></td>
                             </tr>
                             <tr class='extra'>
                                 <td><b><label for='l-ua_pwd'>User-Agent Password:</label></b></td>
-                                <td><input type='password' id='l-ua_pwd' th:field='*{userAgentPWD}' size='15' value=''/> <small>(Leave blank if you don't have one)</small></td>
+                                <td><input type='text' id='l-ua_pwd' th:field='*{ua_pwd}' size='15' th:value='*{ua_pwd}'/> <small>(Leave blank if you don't have one)</small></td>
                             </tr>
                             <tr class='extra'>
                                 <td><b><label for='l-rets_version'>RETS Version:</label></b></td>
-                                <td><select id='l-rets_version' th:field='*{retsVersion}'>
-                                    <option value='1.0'>1.0</option>
-                                    <option value='1.5'>1.5</option>
-                                    <option value='1.7'>1.7</option>
-                                    <option value='1.7.2'>1.7.2</option>
-                                </select></td>
+                                <td>
+                                    <!--<select id='l-rets_version' th:field='*{rets_version}'>-->
+                                    <!--<option value='1.0'>1.0</option>-->
+                                    <!--<option value='1.5'>1.5</option>-->
+                                    <!--<option value='1.7'>1.7</option>-->
+                                    <!--<option value='1.7.2'>1.7.2</option>-->
+                                    <!--</select>-->
+                                    <input type='text' id='l-rets_version' th:field='*{rets_version}' size='15' th:value='*{rets_version}'/>
+                                </td>
                             </tr>
                             <tr class='extra'>
                                 <td><b>Force Basic Auth.:</b></td>

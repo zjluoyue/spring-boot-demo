@@ -14,6 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -28,26 +30,31 @@ import java.util.*;
 public class WebController {
 
     private final static String fileName = "history.txt";
-    private String query = "(FIRSTNAME=Mike),(LASTNAME=Long)";
-    private String[] sClass = new String[]{"ActiveAgent"};
-    private String sResource = "ActiveAgent";
-
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     // 关于session的保存问题，ThreadLocal加以改进，或者增加一个拦截器
     private static RetsSession retsSession;
     private static MResource[] resources;
     private static MClass[] mClasses;
-    private SimpleDateFormat str =new SimpleDateFormat("yyyy-MM-dd KK:mm:ss");
+    private final static SimpleDateFormat str =
+            new SimpleDateFormat("yyyy-MM-dd KK:mm:ss");
+    private String ip = null;
 
-
+    @RequestMapping("/")
+    public String index() {
+        return "forward:/index";
+    }
 
     @RequestMapping("/index")
     /**
      * 登录界面，User用来获取登录信息
      */
-    public String index(Model model) {
+    public String index(@ModelAttribute User user, Model model) {
         logger.info("=============首页首页===========");
-        model.addAttribute("user", new User());
+        if (user.getLogin_url() != null)
+            model.addAttribute("user", user);
+        else
+            model.addAttribute("user", new User());
+        logger.info("用户信息：" + user.toString());
         return "index";
     }
 
@@ -63,27 +70,41 @@ public class WebController {
         model.addAttribute("queryMessage", new QueryMessage());
         if (retsSession != null && retsSession.getLoginUrl() != null)
             return "login";
-
+        // rets_version 版本构造，默认1.7.2
+        String retsVer = "".equals(user.getRets_version()) ? "1.7.2": user.getRets_version();
+        RetsVersion retsVersion = RetsVersion.getVersion(retsVer);
         try {
-            retsSession = new RetsSession(user.getLoginUrl());
-            retsSession.setMethod("POST");
-            retsSession.login(user.getUsername(), user.getPassword());
+            // 没有user_agent信息时，登录方法
+            if ("".equals(user.getUser_agent()))
+                retsSession = getRetsSessionByDefault(user.getLogin_url(), user.getUsername(),
+                        user.getPassword(), retsVersion);
+            else {
+                String ua_pwd = "".equals(user.getUa_pwd()) ? null: user.getUa_pwd();
+
+                retsSession = getRetsSessionByUserAgent(user.getLogin_url(), user.getUsername(),
+                        user.getPassword(), user.getUser_agent(), ua_pwd, retsVersion);
+            }
+            ip = InetAddress.getLocalHost().getHostAddress();
         } catch (RetsException e) {
             logger.error(e.getMessage());
             e.printStackTrace();
-            try {
-                retsSession.logout();
-                retsSession = null;
-            } catch (RetsException e1) {
-                logger.error(e1.getMessage());
-                e1.printStackTrace();
-            }
+//            try {
+//                retsSession.logout();
+//                retsSession = null;
+//            } catch (RetsException e1) {
+//                logger.error(e1.getMessage());
+//                e1.printStackTrace();
+//            } finally {
             return "incorrect";
-        } catch (NullPointerException e) {
+        } catch (UnknownHostException e) {
             logger.error(e.getMessage());
             e.printStackTrace();
             return "incorrect";
         }
+        String loginUrl = retsSession.getLoginUrl();
+        model.addAttribute("ip", ip);
+        model.addAttribute("loginUrl", loginUrl);
+        logger.info("ip:" + ip);
         model.addAttribute("dataMessage", str.format(new Date()));
         logger.info("登录成功");
         return "login";
@@ -205,6 +226,12 @@ public class WebController {
         logger.info("返回class的数组");
         return mClasses;
     }
+
+    /**
+     * 获取数据列表信息
+     * @param index
+     * @return
+     */
     @RequestMapping(value = "/table", method = RequestMethod.GET)
     public @ResponseBody
     Object getTableName(@RequestParam int index) {
@@ -274,5 +301,52 @@ public class WebController {
         return sb.toString();
     }
 
+    /**
+     * 使用默认方式认证
+     *
+     * @param loginUrl
+     * @param userName
+     * @param password
+     * @param retsVersion
+     * @return session
+     */
+    private static RetsSession
+    getRetsSessionByDefault(
+            String loginUrl, String userName,
+            String password, RetsVersion retsVersion)
+            throws RetsException {
+
+        RetsHttpClient httpClient = new CommonsHttpClient();
+        RetsSession session = new RetsSession(loginUrl, httpClient, retsVersion);
+        session.setMethod("POST");
+        session.login(userName, password);
+        return session;
+    }
+
+    /**
+     * 使用useragent的信息认证，获取session
+     *
+     * @param loginUrl
+     * @param userName
+     * @param password
+     * @param retsVersion
+     * @return session
+     */
+    private static RetsSession
+    getRetsSessionByUserAgent (
+            String loginUrl, String userName, String password,
+            String userAgent, String userAgentPassword, RetsVersion retsVersion)
+            throws RetsException {
+
+        RetsHttpClient httpClient = new CommonsHttpClient(
+                10000, userAgentPassword, true);
+
+        RetsSession session = new RetsSession(
+                loginUrl, httpClient, retsVersion, userAgent, false);
+        session.setMethod("POST");
+        session.login(userName, password);
+
+        return session;
+    }
 
 }

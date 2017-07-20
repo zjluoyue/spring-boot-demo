@@ -36,6 +36,9 @@
         .empty{
             color: red;
         }
+        .answer {
+            font: 12pt sans-serif;
+        }
     </style>
     <!--<script type="application/javascript">-->
         <!--/**-->
@@ -73,18 +76,19 @@
     <div id="big-container">
         <div id="container">
             <div id="top">查询</div>
+            <p class="answer" th:inline="text">房源编号：[[${user.getId()}]]</p>
+                <!--当前URL(session)：[[${loginUrl}]]; 登录URL(user): [[${user.getLogin_url()}]]</p>-->
             <div class='box'>
                 <div class='box_heading dark-bg'>
                     <a href="/logout">LogOut</a>
-
                     <span>
-                        <input id="clock" th:value="*{dataMessage}" style="margin-left: 1000px;font-size: 9pt;color:#000000;border:0" size="14"/>
+                        <input id="clock" th:value="*{dataMessage}" style="margin-left: 1000px;font-size: 9pt;color:#000000;border:0" size="15"/>
                     </span>
                 </div>
 
                 <div class='box_content light-bg'>
                     <form id="query_form" th:action="@{/search}" >
-
+                        <input id="ip" type="hidden" th:value="*{ip}"/>
                         <div class="exportfile">
                             <b><label for='l-resource'>resource:</label></b>
                             <select id='l-resource' style="width:150px" value=''>
@@ -101,35 +105,6 @@
                             </span>
 
                         </div>
-                        <!--<table border='0' cellpadding='1' cellspacing='1' width='100%'>-->
-                            <!--&lt;!&ndash;<tr style="position:fixed;top:10px;">&ndash;&gt;-->
-                                <!--&lt;!&ndash;<td></td>&ndash;&gt;-->
-                                <!--&lt;!&ndash;<td style="text-align: center">&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<button id="submit" type="button">查询</button>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<button id="history" type="button">记录</button>&ndash;&gt;-->
-                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
-                            <!--&lt;!&ndash;</tr>&ndash;&gt;-->
-                            <!--&lt;!&ndash;<tr style="position:fixed;top:20px;">&ndash;&gt;-->
-                                <!--&lt;!&ndash;<td>&ndash;&gt;-->
-                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
-                                <!--&lt;!&ndash;<td style="text-align: center">&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<b><label for='l-resource'>resource:</label></b>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<select id='l-resource' style="width:150px" value=''>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;</select>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<b><label for='l-sclass'>sclass:</label></b>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;<select id='l-sclass' style="width:150px" value=''>&ndash;&gt;-->
-                                        <!--&lt;!&ndash;<option>请选择Class</option>&ndash;&gt;-->
-                                    <!--&lt;!&ndash;</select>&ndash;&gt;-->
-                                <!--&lt;!&ndash;</td>&ndash;&gt;-->
-                            <!--&lt;!&ndash;</tr>&ndash;&gt;-->
-                            <!--<tr>-->
-                                <!--<td>-->
-                                <!--</td>-->
-                                <!--<td width='100%' style="text-align: center">-->
-                                <!--</td>-->
-
-                            <!--</tr>-->
-                        <!--</table>-->
                         <div style="text-align: center">
                             <b><label for='l-query'>query:</label></b>
                             <input type='text' id='l-query' size='150' value=''/>
@@ -144,6 +119,7 @@
                         </table>
                     </form>
                 </div>
+                <div id="warning"></div>
             </div>
         </div>
     </div>
@@ -153,13 +129,28 @@
 /**
  * 登录后即可加载resource列表,方便选择
  */
+//var $host = "http://10.4.36.107:8062/";
+var $host = "http://" + $("#ip").val() + ":8062/";
+//var $host = "http://localhost:8062/";
 var $resource = $("#l-resource");
 var $sclass = $("#l-sclass");
+
+$(document).ready(function(){
+    $('body').append('<div style="display:none;width:100%; margin:0 auto;position:fixed;left:0;top:0;bottom: 0;z-index: 111;opacity: 0.5;" id="loading">'
+        + '<a class="mui-active" style="left: 50%;position: absolute;top:50%">'
+        + '<span class="mui-spinner"></span><p style="margin-left: -10px;">发送中...</p></a></div>');
+});
+$(document).ajaxStart(function(){
+    $("#loading").show();
+});
+$(document).ajaxComplete(function(){
+    $("#loading").hide();
+});
 
 $.ajax({
     type:'GET',
     dateType : "json",
-    url:'http://localhost:8062/resources',
+    url: $host + 'resources',
     success: function (result) {
 //        $("#result").append(syntaxHighlight(result));
         build_dropdown(result, $resource, "请选择Resource", "path");
@@ -174,7 +165,7 @@ $.ajax({
  */
 $resource.change(function () {
     $.ajax({
-        url: 'http://localhost:8062/class?index='+$("#l-resource option:selected").val(),
+        url: $host + 'class?index='+$("#l-resource option:selected").val(),
         type: "GET",
         dateType : "json",
         success : function(data) {
@@ -192,7 +183,7 @@ $resource.change(function () {
 });
 $sclass.change(function () {
     $.ajax({
-        url: 'http://localhost:8062/table?index='+$("#l-sclass option:selected").val(),
+        url: $host + 'table?index='+$("#l-sclass option:selected").val(),
         type: "GET",
         dateType : "json",
         success : function(data) {
@@ -249,7 +240,7 @@ $("#submit").click(function () {
     $.ajax({
         type:'POST',
         contentType: "application/json",
-        url:'http://localhost:8062/search',
+        url: $host + 'search',
         async: false,
         data: JSON.stringify({
             query:$("#l-query").val(),
@@ -263,7 +254,7 @@ $("#submit").click(function () {
                 $("#result").append('<p style="color: green">共有'+ result.length +'条记录</p>');
                 $("#result").append(syntaxHighlight(result));
             } else {
-                $("#result").append("<span class='empty'>上述查询条件配备不到任何结果</span>")
+                $("#result").append('<span class="empty">上述查询条件配备不到任何结果</span>');
             }
 //            $.each(result, function (key, data) {
 //                $("#result").append("<br/>============================<br/>")
@@ -278,7 +269,7 @@ $("#history").click(function () {
     $.ajax({
         type:'GET',
         dateType : "text",
-        url:'http://localhost:8062/history',
+        url: $host + 'history',
         async: false,
         success: function (result) {
             $("#result").empty()
