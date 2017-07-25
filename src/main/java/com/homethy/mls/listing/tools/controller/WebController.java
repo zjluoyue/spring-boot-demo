@@ -1,7 +1,9 @@
 package com.homethy.mls.listing.tools.controller;
 
 import com.homethy.mls.listing.tools.model.QueryMessage;
+import com.homethy.mls.listing.tools.model.ResponseMessage;
 import com.homethy.mls.listing.tools.model.User;
+import com.homethy.mls.listing.tools.utils.StringUtil;
 import com.homethy.offlineservice.source.mls.rets.RetsSearchTool;
 import org.realtors.rets.client.*;
 import org.realtors.rets.common.metadata.types.MClass;
@@ -9,13 +11,14 @@ import org.realtors.rets.common.metadata.types.MResource;
 import org.realtors.rets.common.metadata.types.MTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.io.*;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -27,17 +30,17 @@ import java.util.*;
  * "http://rets2.navicamls.net/login.aspx", "Rets413-100716","Rets413AzG"
  */
 @Controller
+@Scope("session")
 public class WebController {
 
     private final static String fileName = "history.txt";
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
-    // 关于session的保存问题，ThreadLocal加以改进，或者增加一个拦截器
-    private static RetsSession retsSession;
-    private static MResource[] resources;
-    private static MClass[] mClasses;
     private final static SimpleDateFormat str =
             new SimpleDateFormat("yyyy-MM-dd KK:mm:ss");
-    private String ip = null;
+    private final static Logger logger = LoggerFactory.getLogger(WebController.class);
+    // 关于session的保存问题，ThreadLocal加以改进，或者增加一个拦截器
+    private RetsSession retsSession;
+    private MResource[] resources;
+    private MClass[] mClasses;
 
     @RequestMapping("/")
     public String index() {
@@ -48,7 +51,7 @@ public class WebController {
     /**
      * 登录界面，User用来获取登录信息
      */
-    public String index(@ModelAttribute User user, Model model) {
+    public String index(@ModelAttribute User user, ModelMap model) {
         logger.info("=============首页首页===========");
         if (user.getLogin_url() != null)
             model.addAttribute("user", user);
@@ -65,11 +68,16 @@ public class WebController {
      * @param user 登录信息
      * @param model 回传参数
      */
-    public String login(@ModelAttribute User user, Model model) {
+    public String login(@ModelAttribute @Valid User user, ModelMap model) {
         logger.info("用户登录信息：" + user.toString());
-        model.addAttribute("queryMessage", new QueryMessage());
-        if (retsSession != null && retsSession.getLoginUrl() != null)
+        if (StringUtil.isEmpty(user.getLogin_url()) && retsSession == null)
+            return "index";
+        if (retsSession != null && retsSession.getLoginUrl() != null) {
+            String loginUrl = retsSession.getLoginUrl();
+            model.addAttribute("loginUrl", loginUrl);
+            model.addAttribute("dataMessage", str.format(new Date()));
             return "login";
+        }
         // rets_version 版本构造，默认1.7.2
         String retsVer = "".equals(user.getRets_version()) ? "1.7.2": user.getRets_version();
         RetsVersion retsVersion = RetsVersion.getVersion(retsVer);
@@ -84,27 +92,22 @@ public class WebController {
                 retsSession = getRetsSessionByUserAgent(user.getLogin_url(), user.getUsername(),
                         user.getPassword(), user.getUser_agent(), ua_pwd, retsVersion);
             }
-            ip = InetAddress.getLocalHost().getHostAddress();
         } catch (RetsException e) {
             logger.error(e.getMessage());
             e.printStackTrace();
-//            try {
-//                retsSession.logout();
-//                retsSession = null;
-//            } catch (RetsException e1) {
-//                logger.error(e1.getMessage());
-//                e1.printStackTrace();
-//            } finally {
-            return "incorrect";
-        } catch (UnknownHostException e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            if (retsVersion != null) {
+                try {
+                    retsSession.logout();
+                    retsSession = null;
+                } catch (RetsException e1) {
+                    logger.error(e1.getMessage());
+                    e1.printStackTrace();
+                }
+            }
             return "incorrect";
         }
         String loginUrl = retsSession.getLoginUrl();
-        model.addAttribute("ip", ip);
         model.addAttribute("loginUrl", loginUrl);
-        logger.info("ip:" + ip);
         model.addAttribute("dataMessage", str.format(new Date()));
         logger.info("登录成功");
         return "login";
@@ -145,23 +148,48 @@ public class WebController {
      */
     public @ResponseBody Object
     search(@RequestBody QueryMessage query) throws Exception{
+        String context = "";
+        int classIndex = Integer.parseInt(query.getSclass());
+        // 返回一个查询次数的数组
+        List<ResponseMessage> responseMessages = new ArrayList<>();
+        String resource = query.getResource();
+        if (classIndex == -1) { // 查询所有class
+            query.setSclass("All Class");
+            for (MClass mClass : mClasses) {
+                ResponseMessage responseMessage = new ResponseMessage();
+                List<Map<String, String>> result = RetsSearchTool.searchDataFromMLS(retsSession, resource,
+                        mClass.getId(), query.getQuery(), "", 100, 1);
+                String message = "query='" + query.getQuery() + "', resource='" + resource + "', class='" +
+                        mClass.getId() + "', 此次查询到" + result.size() + "条结果";
+                context = context + message + "\n";
+                responseMessage.success(message, result);
+                responseMessages.add(responseMessage);
+            }
+        } else {
+            String mclass = mClasses[classIndex].getId();
+            query.setSclass(mclass);
+            // 调用查询接口
+            List<Map<String, String>> searchResultList =
+                    RetsSearchTool.searchDataFromMLS(retsSession, resource,
+                            mclass, query.getQuery(), "", 100, 1);
+            query.setSize(searchResultList.size());
+            logger.info("查询结果：共" + searchResultList.size() + "条记录");
+            context = query.toString();
+            ResponseMessage rm = new ResponseMessage().success(context, searchResultList);
+            responseMessages.add(rm);
+        }
+//        ResponseMessage responseMessage = new ResponseMessage();
+//        String message = "resource: " + resource + "; class: " + mClasses[classIndex].getId() + "; 此次查询结果共" + searchResultList.size() + "条";
+//        responseMessages.
         // 写文件
-        logger.info("查询条件：" + query.toString());
-        String context = query.toString();
+        logger.info("查询条件：" + context);
         try {
             writeFile(context);
         } catch (IOException e) {
             logger.error(e.getMessage());
             e.printStackTrace();
         }
-//        System.out.println(query);
-        // 调用查询接口
-        List<Map<String, String>> searchResultList =
-                RetsSearchTool.searchDataFromMLS(retsSession, query.getResource(),
-                        query.getSclass(), query.getQuery(),
-                        "", 100, 1);
-        logger.info("查询结果：共" + searchResultList.size() + "条记录");
-        return searchResultList;
+        return responseMessages;
     }
 
 
@@ -286,13 +314,13 @@ public class WebController {
             if (c == '\n' || c == '\r') {
                 line = reader.readLine();
                 if (line != null)
-                    sb.append(line + "<br/>");
+                    sb.append(new String(line.getBytes("ISO-8859-1"), "utf-8") + "<br/>");
                 next--;
             }
             next--;
             reader.seek(next);
             if (next == 0) {// 当文件指针退至文件开始处，输出第一行
-                 sb.append(reader.readLine() + "<br/>");
+                 sb.append(new String(reader.readLine().getBytes("ISO-8859-1"),"utf-8") + "<br/>");
 //                System.out.println(reader.readLine());
             }
         }

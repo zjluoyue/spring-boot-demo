@@ -9,9 +9,18 @@ public class QueryMessage {
     private String query;
     private String resource;
     private String sclass;
+    private int size;
 
     public QueryMessage() {
 
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public String getQuery() {
@@ -40,10 +49,9 @@ public class QueryMessage {
 
     @Override
     public String toString() {
-        return "QueryMessage{" +
-                "query='" + query + '\'' +
+        return "query='" + query + '\'' +
                 ", resource='" + resource + '\'' +
                 ", sclass='" + sclass + '\'' +
-                '}';
+                ", 本次查询到" + size +"条结果";
     }
 }

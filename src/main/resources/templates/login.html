@@ -75,20 +75,21 @@
 <body >
     <div id="big-container">
         <div id="container">
-            <div id="top">查询</div>
+            <div id="top">MLS房源查询</div>
             <p class="answer" th:inline="text">房源编号：[[${user.getId()}]]</p>
-                <!--当前URL(session)：[[${loginUrl}]]; 登录URL(user): [[${user.getLogin_url()}]]</p>-->
             <div class='box'>
                 <div class='box_heading dark-bg'>
-                    <a href="/logout">LogOut</a>
+                    <a href="/logout" style="margin-right: 250px">LogOut</a>
+                    <span th:inline="text" >
+                        [[${loginUrl}]]
+                    </span>
                     <span>
-                        <input id="clock" th:value="*{dataMessage}" style="margin-left: 1000px;font-size: 9pt;color:#000000;border:0" size="15"/>
+                        <input id="clock" th:value="*{dataMessage}" style="margin-left: 250px;font-size: 9pt;color:#000000;border:0" size="15"/>
                     </span>
                 </div>
 
                 <div class='box_content light-bg'>
                     <form id="query_form" th:action="@{/search}" >
-                        <input id="ip" type="hidden" th:value="*{ip}"/>
                         <div class="exportfile">
                             <b><label for='l-resource'>resource:</label></b>
                             <select id='l-resource' style="width:150px" value=''>
@@ -129,9 +130,6 @@
 /**
  * 登录后即可加载resource列表,方便选择
  */
-//var $host = "http://10.4.36.107:8062/";
-var $host = "http://" + $("#ip").val() + ":8062/";
-//var $host = "http://localhost:8062/";
 var $resource = $("#l-resource");
 var $sclass = $("#l-sclass");
 
@@ -139,6 +137,19 @@ $(document).ready(function(){
     $('body').append('<div style="display:none;width:100%; margin:0 auto;position:fixed;left:0;top:0;bottom: 0;z-index: 111;opacity: 0.5;" id="loading">'
         + '<a class="mui-active" style="left: 50%;position: absolute;top:50%">'
         + '<span class="mui-spinner"></span><p style="margin-left: -10px;">发送中...</p></a></div>');
+    $.ajax({
+        type:'GET',
+        dateType : "json",
+        url: '/resources',
+        success: function (result) {
+//            $("#result").append(syntaxHighlight(result));
+            build_dropdown(result, $resource, "请选择Resource", "path");
+        },
+        error:function (XMLHttpRequest, textStatus, errorThrown) {
+            $("#result").append(
+                "<span>执行失败，状态码：" + XMLHttpRequest.status + "</span>")
+        }
+    });
 });
 $(document).ajaxStart(function(){
     $("#loading").show();
@@ -147,43 +158,32 @@ $(document).ajaxComplete(function(){
     $("#loading").hide();
 });
 
-$.ajax({
-    type:'GET',
-    dateType : "json",
-    url: $host + 'resources',
-    success: function (result) {
-//        $("#result").append(syntaxHighlight(result));
-        build_dropdown(result, $resource, "请选择Resource", "path");
-    },
-    error:function (XMLHttpRequest, textStatus, errorThrown) {
-        $("#result").append(
-            "<span>执行失败，状态码：" + XMLHttpRequest.status + "</span>")
-    }
-});
 /**
  * 改变resource选择后加载加载sclass列表,方便选择
  */
 $resource.change(function () {
     $.ajax({
-        url: $host + 'class?index='+$("#l-resource option:selected").val(),
+        url: '/class?index='+$("#l-resource option:selected").val(),
         type: "GET",
         dateType : "json",
         success : function(data) {
 //            $("#result").append(syntaxHighlight(data));
             $sclass.empty();
-            $sclass.append('<option value="-1">请选择class</option>')
+            $sclass.append('<option value="-1">All Class</option>')
             if (data) {
                 $.each(data, function(key, value) {
                     $sclass.append('<option value="' + key + '">'
-                        + value["path"].split(":")[1] + '</option>');
+                        + value["id"] + '</option>');
                 });
+            } else {
+                $("#result").append("<span>用户未登录</span>");
             }
         }
     });
 });
 $sclass.change(function () {
     $.ajax({
-        url: $host + 'table?index='+$("#l-sclass option:selected").val(),
+        url: '/table?index='+$("#l-sclass option:selected").val(),
         type: "GET",
         dateType : "json",
         success : function(data) {
@@ -240,18 +240,21 @@ $("#submit").click(function () {
     $.ajax({
         type:'POST',
         contentType: "application/json",
-        url: $host + 'search',
-        async: false,
+        url: '/search',
+//        async: false,
         data: JSON.stringify({
             query:$("#l-query").val(),
             resource:$("#l-resource option:selected").text(),
-            sclass:$("#l-sclass option:selected").text()
+            sclass:$("#l-sclass option:selected").val()
         }),
         dateType:"json",
         success: function (result) {
             $("#result").empty();
-            if (result.length > 0) {
-                $("#result").append('<p style="color: green">共有'+ result.length +'条记录</p>');
+            if (result.length > 1) {
+                $("#result").append('<p style="color: green">本次执行 '+ result.length +' 条查询</p>');
+                $("#result").append(syntaxHighlight(result));
+            } else if (result.length == 1) {
+                $("#result").append('<p style="color: green">本次执行 1 条查询</p>');
                 $("#result").append(syntaxHighlight(result));
             } else {
                 $("#result").append('<span class="empty">上述查询条件配备不到任何结果</span>');
@@ -269,8 +272,8 @@ $("#history").click(function () {
     $.ajax({
         type:'GET',
         dateType : "text",
-        url: $host + 'history',
-        async: false,
+        url: '/history',
+//        async: false,
         success: function (result) {
             $("#result").empty()
                 .append("<span>" + result + "</span>");
