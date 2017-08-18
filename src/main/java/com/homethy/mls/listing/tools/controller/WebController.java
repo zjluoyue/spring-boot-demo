@@ -12,11 +12,17 @@ import org.realtors.rets.common.metadata.types.MTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -35,7 +41,7 @@ public class WebController {
 
     private final static String fileName = "history.txt";
     private final static SimpleDateFormat str =
-            new SimpleDateFormat("yyyy-MM-dd KK:mm:ss");
+            new SimpleDateFormat("yyyy-MM-dd'T'KK:mm:ss");
     private final static Logger logger = LoggerFactory.getLogger(WebController.class);
     // 关于session的保存问题，ThreadLocal加以改进，或者增加一个拦截器
     private RetsSession retsSession;
@@ -69,6 +75,8 @@ public class WebController {
      * @param model 回传参数
      */
     public String login(@ModelAttribute @Valid User user, ModelMap model) {
+        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+        System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "debug");
         logger.info("用户登录信息：" + user.toString());
         if (StringUtil.isEmpty(user.getLogin_url()) && retsSession == null)
             return "index";
@@ -274,13 +282,82 @@ public class WebController {
         logger.info("返回table数组，size为：" + tables.length);
         return tables;
     }
+
+    @RequestMapping(value = "/download", method = RequestMethod.GET)
+    public ResponseEntity<InputStreamResource>
+    download(@RequestParam(defaultValue = "default") String mlsId,
+                         ModelMap map, HttpServletResponse res) throws IOException {
+        logger.info("download...");
+        String filePath = "metaData/";
+        String fileName = filePath + mlsId + ".xml";
+        File downFile = new File(fileName);
+        File file = new File(filePath);
+        if (!file.exists())
+            file.mkdir();
+
+        try {
+            retsSession.getMetadata(filePath + mlsId + ".xml");
+        } catch (RetsException e) {
+            logger.info("Session过期，获取MetaData失败");
+            e.printStackTrace();
+            logger.error(e.toString());
+        }
+
+        if (!downFile.exists()) {
+            try {
+                downFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+//        res.setHeader("content-type", "application/octet-stream");
+//        res.setContentType("application/octet-stream");
+//        res.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+//        byte[] buff = new byte[1024];
+//        BufferedInputStream bis = null;
+//        OutputStream os = null;
+//        try {
+//            os = res.getOutputStream();
+//            bis = new BufferedInputStream(new FileInputStream(new File(fileName)));
+//            int i = bis.read(buff);
+//            while (i != -1) {
+//                os.write(buff, 0, buff.length);
+//                os.flush();
+//                i = bis.read(buff);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            if (bis != null) {
+//                try {
+//                    bis.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+        FileSystemResource fileResource = new FileSystemResource(fileName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Content-Disposition", String.format("attachment; filename=\"%s\"", fileResource.getFilename()));
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+        logger.info("success");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentLength(fileResource.contentLength())
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .body(new InputStreamResource(fileResource.getInputStream()));
+    }
     /**
      * 将记录写入文件
      * @param content 写入的内容
      * @throws IOException 文件读取写入失败抛出异常
      */
     private static void
-    writeFile(String content) throws IOException{
+    writeFile(String content) throws IOException {
 
         File file = new File(fileName);
 

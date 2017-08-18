@@ -26,3 +26,5 @@ nbdist/
 .nb-gradle/
 
 history.txt
+metaData/
+metaDataXml/

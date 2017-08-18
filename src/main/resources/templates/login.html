@@ -103,9 +103,12 @@
                                 <button id="history" type="button">历史记录</button>
                                 <!--<button id="check" type="button">检查</button>-->
                                 <button id="clean" type="button" onclick="$('#result').empty();">清除</button>
+                                <a th:href="${'/download?mlsId='+user.id}">下载</a>
+                                <!--<a href="/download?mlsId=82">下载2</a>-->
                             </span>
 
                         </div>
+                        <p id="keyField"></p>
                         <div style="text-align: center">
                             <b><label for='l-query'>query:</label></b>
                             <input type='text' id='l-query' size='150' value=''/>
@@ -120,6 +123,13 @@
                         </table>
                     </form>
                 </div>
+                <div style="text-align: center;">
+                    <p><img src="/jpg/search-icon-grey.gif" alt="Searchable Field"/> Searchable Field &nbsp; &nbsp; &nbsp;
+                        <img src="/jpg/skey.png" alt="Key Field"/> Key Field &nbsp; &nbsp; &nbsp;
+                        <img src="/jpg/star.png" alt="Required"/> Required &nbsp; &nbsp; &nbsp;
+                        <img src="/jpg/heart.png" alt="InKeyIndex"/> InKeyIndex
+                    </p>
+                </div>
                 <div id="warning"></div>
             </div>
         </div>
@@ -132,7 +142,7 @@
  */
 var $resource = $("#l-resource");
 var $sclass = $("#l-sclass");
-
+var metaData;
 $(document).ready(function(){
     $('body').append('<div style="display:none;width:100%; margin:0 auto;position:fixed;left:0;top:0;bottom: 0;z-index: 111;opacity: 0.5;" id="loading">'
         + '<a class="mui-active" style="left: 50%;position: absolute;top:50%">'
@@ -143,6 +153,7 @@ $(document).ready(function(){
         url: '/resources',
         success: function (result) {
 //            $("#result").append(syntaxHighlight(result));
+            metaData = result;
             build_dropdown(result, $resource, "请选择Resource", "path");
         },
         error:function (XMLHttpRequest, textStatus, errorThrown) {
@@ -162,16 +173,23 @@ $(document).ajaxComplete(function(){
  * 改变resource选择后加载加载sclass列表,方便选择
  */
 $resource.change(function () {
+    var resourceSelected = $("#l-resource option:selected").val();
     $.ajax({
-        url: '/class?index='+$("#l-resource option:selected").val(),
+        url: '/class?index='+resourceSelected,
         type: "GET",
         dateType : "json",
         success : function(data) {
 //            $("#result").append(syntaxHighlight(data));
+            if (resourceSelected != -1){
+                $("#keyField").empty().html('<b>Key Field:</b>'
+                    + metaData[resourceSelected]["keyField"]
+                    +' <img src="jpg/skey.png" alt="Key Field"/>');
+            }
             $sclass.empty();
             $sclass.append('<option value="-1">All Class</option>')
             if (data) {
                 $.each(data, function(key, value) {
+
                     $sclass.append('<option value="' + key + '">'
                         + value["id"] + '</option>');
                 });
@@ -195,7 +213,11 @@ $sclass.change(function () {
                 '<td>Description</td><td>Type</td><td>Length</td></tr>');
             if (data) {
                 $.each(data,function (key, value) {
-                    $q_table.append('<tr><td>' + value["systemName"] +'</td>'
+                    var cell1 = value["systemName"];
+                    if (value["searchable"] == 1){
+                        cell1 += ' <image src="/jpg/search-icon-grey.gif" alt="Searchable Field"/>'
+                    }
+                    $q_table.append('<tr><td>' + cell1 +'</td>'
                         + '<td>' + value["standardName"] + '</td>'
                         + '<td>' + value["longName"] + '</td>'
                         + '<td>' + value["dataType"] + '</td>'
